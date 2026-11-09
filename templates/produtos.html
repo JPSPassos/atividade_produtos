@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Produtos</title>
+</head>
+<body>
+  <h1>Produtos</h1>
+  <p id="mensagem" role="status"></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Preço</th>
+        <th>Quantidade</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody id="lista-produtos"></tbody>
+  </table>
+
+  <script>
+    async function carregarProdutos() {
+      const resposta = await fetch("/listar");
+      if (!resposta.ok) {
+        throw new Error("Não foi possível carregar os produtos.");
+      }
+
+      const produtos = await resposta.json();
+      const lista = document.getElementById("lista-produtos");
+      lista.replaceChildren();
+
+      produtos.forEach((produto) => {
+        const linha = document.createElement("tr");
+
+        const nome = document.createElement("td");
+        nome.textContent = produto.nome;
+        linha.appendChild(nome);
+
+        const preco = document.createElement("td");
+        preco.textContent = Number(produto.preco).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL"
+        });
+        linha.appendChild(preco);
+
+        const quantidade = document.createElement("td");
+        quantidade.textContent = produto.quantidade;
+        linha.appendChild(quantidade);
+
+        const acao = document.createElement("td");
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.textContent = "Excluir";
+        botao.addEventListener("click", () => excluirProduto(produto.id));
+        acao.appendChild(botao);
+        linha.appendChild(acao);
+
+        lista.appendChild(linha);
+      });
+    }
+
+    async function excluirProduto(id) {
+      if (!window.confirm("Deseja excluir este produto?")) {
+        return;
+      }
+
+      const mensagem = document.getElementById("mensagem");
+      const resposta = await fetch(`/apagar/${id}`, { method: "DELETE" });
+      if (!resposta.ok) {
+        const resultado = await resposta.json();
+        mensagem.textContent = resultado.erro || "Não foi possível excluir o produto.";
+        return;
+      }
+
+      mensagem.textContent = "Produto excluído.";
+      await carregarProdutos();
+    }
+
+    carregarProdutos().catch((erro) => {
+      document.getElementById("mensagem").textContent = erro.message;
+    });
+  </script>
+</body>
+</html>
